@@ -1,4 +1,6 @@
 #include "filter.h"
+#include <stdlib.h>
+#include <string.h>
 
 static PyObject*
 _round_corner_apply(PyObject *self, PyObject *args)
@@ -19,6 +21,16 @@ _round_corner_apply(PyObject *self, PyObject *args)
     unsigned char *ptr = (unsigned char *) PyBytes_AsString(buffer);
 
     int num_bytes = bytes_per_pixel(image_mode_str);
+
+    unsigned char *src_copy = NULL;
+    if (transparent == 1 && aa_enabled) {
+        src_copy = (unsigned char *) malloc((size_t) width * height * num_bytes);
+        if (src_copy == NULL) {
+            PyErr_NoMemory();
+            goto OOM;
+        }
+        memcpy(src_copy, ptr, (size_t) width * height * num_bytes);
+    }
 
     int r_idx = rgb_order(image_mode_str, 'R'),
         g_idx = rgb_order(image_mode_str, 'G'),
@@ -142,21 +154,22 @@ _round_corner_apply(PyObject *self, PyObject *args)
             float aa = 1.f - ((idx / (float)pixel_count_x) * aa_amount);
 
             if (transparent == 1) {
-                ptr[top_left + r_idx] = (color_top_left[r_idx] * (1.f - aa));
-                ptr[top_left + g_idx] = (color_top_left[g_idx] * (1.f - aa));
-                ptr[top_left + b_idx] = (color_top_left[b_idx] * (1.f - aa));
-
-                ptr[bottom_left + r_idx] = (color_bottom_left[r_idx] * (1.f - aa));
-                ptr[bottom_left + g_idx] = (color_bottom_left[g_idx] * (1.f - aa));
-                ptr[bottom_left + b_idx] = (color_bottom_left[b_idx] * (1.f - aa));
-
-                ptr[top_right + r_idx] = (color_top_right[r_idx] * (1.f - aa));
-                ptr[top_right + g_idx] = (color_top_right[g_idx] * (1.f - aa));
-                ptr[top_right + b_idx] = (color_top_right[b_idx] * (1.f - aa));
-
-                ptr[bottom_right + r_idx] = (color_bottom_right[r_idx] * (1.f - aa));
-                ptr[bottom_right + g_idx] = (color_bottom_right[g_idx] * (1.f - aa));
-                ptr[bottom_right + b_idx] = (color_bottom_right[b_idx] * (1.f - aa));
+                ptr[top_left + r_idx] = src_copy[top_left + r_idx];
+                ptr[top_left + g_idx] = src_copy[top_left + g_idx];
+                ptr[top_left + b_idx] = src_copy[top_left + b_idx];
+                ptr[bottom_left + r_idx] = src_copy[bottom_left + r_idx];
+                ptr[bottom_left + g_idx] = src_copy[bottom_left + g_idx];
+                ptr[bottom_left + b_idx] = src_copy[bottom_left + b_idx];
+                ptr[top_right + r_idx] = src_copy[top_right + r_idx];
+                ptr[top_right + g_idx] = src_copy[top_right + g_idx];
+                ptr[top_right + b_idx] = src_copy[top_right + b_idx];
+                ptr[bottom_right + r_idx] = src_copy[bottom_right + r_idx];
+                ptr[bottom_right + g_idx] = src_copy[bottom_right + g_idx];
+                ptr[bottom_right + b_idx] = src_copy[bottom_right + b_idx];
+                ptr[top_left + a_idx] = (unsigned char)(255.f * (1.f - aa));
+                ptr[bottom_left + a_idx] = (unsigned char)(255.f * (1.f - aa));
+                ptr[top_right + a_idx] = (unsigned char)(255.f * (1.f - aa));
+                ptr[bottom_right + a_idx] = (unsigned char)(255.f * (1.f - aa));
             } else {
                 ptr[top_left + r_idx] = (color_top_left[r_idx] * (1.f - aa)) + (r * (aa));
                 ptr[top_left + g_idx] = (color_top_left[g_idx] * (1.f - aa)) + (g * (aa));
@@ -227,21 +240,22 @@ _round_corner_apply(PyObject *self, PyObject *args)
             float aa = 1.f - ((idx / (float)pixel_count_y) * aa_amount);
 
             if (transparent == 1) {
-                ptr[top_left + r_idx] = (color_top_left[r_idx] * (1.f - aa));
-                ptr[top_left + g_idx] = (color_top_left[g_idx] * (1.f - aa));
-                ptr[top_left + b_idx] = (color_top_left[b_idx] * (1.f - aa));
-
-                ptr[bottom_left + r_idx] = (color_bottom_left[r_idx] * (1.f - aa));
-                ptr[bottom_left + g_idx] = (color_bottom_left[g_idx] * (1.f - aa));
-                ptr[bottom_left + b_idx] = (color_bottom_left[b_idx] * (1.f - aa));
-
-                ptr[top_right + r_idx] = (color_top_right[r_idx] * (1.f - aa));
-                ptr[top_right + g_idx] = (color_top_right[g_idx] * (1.f - aa));
-                ptr[top_right + b_idx] = (color_top_right[b_idx] * (1.f - aa));
-
-                ptr[bottom_right + r_idx] = (color_bottom_right[r_idx] * (1.f - aa));
-                ptr[bottom_right + g_idx] = (color_bottom_right[g_idx] * (1.f - aa));
-                ptr[bottom_right + b_idx] = (color_bottom_right[b_idx] * (1.f - aa));
+                ptr[top_left + r_idx] = src_copy[top_left + r_idx];
+                ptr[top_left + g_idx] = src_copy[top_left + g_idx];
+                ptr[top_left + b_idx] = src_copy[top_left + b_idx];
+                ptr[bottom_left + r_idx] = src_copy[bottom_left + r_idx];
+                ptr[bottom_left + g_idx] = src_copy[bottom_left + g_idx];
+                ptr[bottom_left + b_idx] = src_copy[bottom_left + b_idx];
+                ptr[top_right + r_idx] = src_copy[top_right + r_idx];
+                ptr[top_right + g_idx] = src_copy[top_right + g_idx];
+                ptr[top_right + b_idx] = src_copy[top_right + b_idx];
+                ptr[bottom_right + r_idx] = src_copy[bottom_right + r_idx];
+                ptr[bottom_right + g_idx] = src_copy[bottom_right + g_idx];
+                ptr[bottom_right + b_idx] = src_copy[bottom_right + b_idx];
+                ptr[top_left + a_idx] = (unsigned char)(255.f * (1.f - aa));
+                ptr[bottom_left + a_idx] = (unsigned char)(255.f * (1.f - aa));
+                ptr[top_right + a_idx] = (unsigned char)(255.f * (1.f - aa));
+                ptr[bottom_right + a_idx] = (unsigned char)(255.f * (1.f - aa));
             } else {
                 ptr[top_left + r_idx] = (color_top_left[r_idx] * (1.f - aa)) + (r * (aa));
                 ptr[top_left + g_idx] = (color_top_left[g_idx] * (1.f - aa)) + (g * (aa));
@@ -264,8 +278,12 @@ _round_corner_apply(PyObject *self, PyObject *args)
 
 END:
 
+    free(src_copy);
     Py_INCREF(buffer);
     return buffer;
+
+OOM:
+    return NULL;
 }
 
 FILTER_MODULE(_round_corner,
